@@ -57,9 +57,8 @@ async def _procesar_route_assigned(payload: dict):
     cliente_id = envio.get("cliente_id") if envio else None
     canal, idioma = _resolver_canal(cliente_id, "push")
     mensaje = (
-        f"Tu envío {payload['envio_id']} fue asignado a un vehículo "
-        f"(vehiculo_id={payload.get('vehiculo_id')}). La hora estimada de llegada "
-        f"se confirmará más adelante."
+        f"¡Buenas noticias! Tu envío {payload['envio_id']} ya fue asignado a un vehículo "
+        f"de nuestra flota. Te avisaremos en cuanto tengamos una hora estimada de llegada."
     )
     registrar_notificacion(
         destinatario_tipo="cliente",
@@ -75,8 +74,9 @@ async def _procesar_shipment_delivered(payload: dict):
     cliente_id = envio.get("cliente_id") if envio else None
     canal, idioma = _resolver_canal(cliente_id, "email")
     mensaje = (
-        f"Tu envío {payload['envio_id']} fue entregado a "
-        f"{payload.get('nombre_receptor')} el {payload.get('entregado_en')}."
+        f"Tu envío {payload['envio_id']} fue entregado con éxito a "
+        f"{payload.get('nombre_receptor')} el {payload.get('entregado_en')}. "
+        f"¡Gracias por confiar en LogiTrack!"
     )
     registrar_notificacion(
         destinatario_tipo="cliente",
@@ -91,7 +91,11 @@ async def _procesar_shipment_incident(payload: dict):
     envio = await _obtener_envio(payload["envio_id"])
     cliente_id = envio.get("cliente_id") if envio else None
     canal, idioma = _resolver_canal(cliente_id, "sms")
-    mensaje = f"Se reportó una incidencia en tu envío {payload['envio_id']}: {payload.get('notas') or 'sin detalle'}."
+    mensaje = (
+        f"Detectamos una incidencia con tu envío {payload['envio_id']}: "
+        f"{payload.get('notas') or 'estamos revisando los detalles'}. "
+        f"Nuestro equipo ya está trabajando para resolverlo."
+    )
     registrar_notificacion(
         destinatario_tipo="cliente",
         canal=canal,
@@ -105,7 +109,11 @@ async def _procesar_shipment_returned(payload: dict):
     envio = await _obtener_envio(payload["envio_id"])
     cliente_id = envio.get("cliente_id") if envio else None
     canal, idioma = _resolver_canal(cliente_id, "email")
-    mensaje = f"Tu envío {payload['envio_id']} fue devuelto. Motivo: {payload.get('notas') or 'sin detalle'}."
+    mensaje = (
+        f"Tu envío {payload['envio_id']} fue devuelto. Motivo: "
+        f"{payload.get('notas') or 'no se especificó un motivo'}. "
+        f"Si tienes dudas, contáctanos y con gusto te ayudamos."
+    )
     registrar_notificacion(
         destinatario_tipo="cliente",
         canal=canal,
@@ -118,8 +126,8 @@ async def _procesar_shipment_returned(payload: dict):
 async def _procesar_maintenance_alert(payload: dict):
     # Dirigido al gestor de flota, no a un cliente final — no aplica preferencia de canal.
     mensaje = (
-        f"Alerta de mantenimiento para el vehículo {payload.get('vehiculo_id')}: "
-        f"{payload.get('motivo')} (prioridad {payload.get('prioridad')})."
+        f"⚠ Alerta de mantenimiento — Vehículo {payload.get('vehiculo_id')}: "
+        f"{payload.get('motivo')} (prioridad: {payload.get('prioridad')})."
     )
     registrar_notificacion(
         destinatario_tipo="gestor_flota",
