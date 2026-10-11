@@ -52,14 +52,35 @@ def _resolver_canal(cliente_id, canal_por_defecto: str) -> tuple[str, str]:
     return canal, idioma
 
 
+def _formatear_eta(valor):
+    from datetime import datetime, timedelta, timezone
+
+    try:
+        momento = datetime.fromisoformat(str(valor))
+    except ValueError:
+        return None
+    if momento.tzinfo is None:
+        momento = momento.replace(tzinfo=timezone.utc)
+    return momento.astimezone(timezone(timedelta(hours=-5))).strftime("%d/%m/%Y %H:%M")
+
+
 async def _procesar_route_assigned(payload: dict):
     envio = await _obtener_envio(payload["envio_id"])
     cliente_id = envio.get("cliente_id") if envio else None
+    codigo = (envio or {}).get("codigo_envio") or payload["envio_id"]
     canal, idioma = _resolver_canal(cliente_id, "push")
-    mensaje = (
-        f"¡Buenas noticias! Tu envío {payload['envio_id']} ya fue asignado a un vehículo "
-        f"de nuestra flota. Te avisaremos en cuanto tengamos una hora estimada de llegada."
-    )
+
+    mensaje = f"¡Buenas noticias! Tu envío {codigo} ya tiene transporte asignado"
+    if payload.get("placa"):
+        mensaje += f" (vehículo {payload['placa']}"
+        if payload.get("conductor_nombre"):
+            mensaje += f", conductor {payload['conductor_nombre']}"
+        mensaje += ")"
+    eta = _formatear_eta(payload.get("hora_estimada_llegada"))
+    if eta:
+        mensaje += f". Llegada estimada: {eta} (hora de Colombia)"
+    mensaje += "."
+
     registrar_notificacion(
         destinatario_tipo="cliente",
         canal=canal,
