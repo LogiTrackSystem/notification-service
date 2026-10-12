@@ -23,6 +23,7 @@ ROUTING_KEYS = [
     "shipment.incident",
     "shipment.returned",
     "maintenance.alert",
+    "tracking.trip_started",
 ]
 
 
@@ -89,6 +90,28 @@ async def _procesar_route_assigned(payload: dict):
         referencia={"envio_id": payload["envio_id"], "cliente_id": cliente_id, "ruta_id": payload.get("ruta_id"), "idioma": idioma},
     )
 
+
+async def _procesar_trip_started(payload: dict):
+    envio = await _obtener_envio(payload["envio_id"])
+    cliente_id = envio.get("cliente_id") if envio else None
+    codigo = (envio or {}).get("codigo_envio") or payload["envio_id"]
+    canal, idioma = _resolver_canal(cliente_id, "push")
+
+    mensaje = f"Tu envío {codigo} ya va en camino"
+    if payload.get("placa"):
+        mensaje += f" en el vehículo {payload['placa']}"
+    eta = _formatear_eta(payload.get("hora_estimada_llegada"))
+    if eta:
+        mensaje += f". Llegada estimada: {eta} (hora de Colombia)"
+    mensaje += "."
+
+    registrar_notificacion(
+        destinatario_tipo="cliente",
+        canal=canal,
+        mensaje=mensaje,
+        evento_origen="tracking.trip_started",
+        referencia={"envio_id": payload["envio_id"], "cliente_id": cliente_id, "idioma": idioma},
+    )
 
 async def _procesar_shipment_delivered(payload: dict):
     envio = await _obtener_envio(payload["envio_id"])
@@ -165,6 +188,7 @@ _HANDLERS = {
     "shipment.incident": _procesar_shipment_incident,
     "shipment.returned": _procesar_shipment_returned,
     "maintenance.alert": _procesar_maintenance_alert,
+    "tracking.trip_started": _procesar_trip_started,
 }
 
 
