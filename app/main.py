@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from .interno import proteger_servicio
@@ -21,4 +22,4 @@ app.include_router(preferencias.router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "notification-service"}
+    return {"status": "ok", "service": "notification-service", "version": os.getenv("APP_VERSION", "dev")}
