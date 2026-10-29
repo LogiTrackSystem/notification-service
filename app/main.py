@@ -1,5 +1,7 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from .interno import proteger_servicio
 
 from .routers import notificaciones, preferencias
 from .events import iniciar_consumidor
@@ -14,9 +16,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Notification Service", lifespan=lifespan)
 app.include_router(notificaciones.router)
+proteger_servicio(app)
 app.include_router(preferencias.router)
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "notification-service"}
+    return {"status": "ok", "service": "notification-service", "version": os.getenv("APP_VERSION", "dev")}

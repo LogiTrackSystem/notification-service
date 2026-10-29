@@ -4,6 +4,7 @@ import os
 
 import aio_pika
 import httpx
+from .interno import cabeceras_internas
 from dotenv import load_dotenv
 
 from .store import registrar_notificacion
@@ -31,7 +32,7 @@ async def _obtener_envio(envio_id: str):
     if not SHIPMENT_SERVICE_URL:
         return None
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=5.0, headers=cabeceras_internas()) as client:
             resp = await client.get(f"{SHIPMENT_SERVICE_URL}/envios/{envio_id}")
             resp.raise_for_status()
             return resp.json()
